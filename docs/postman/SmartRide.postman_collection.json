@@ -1,0 +1,351 @@
+{
+  "info": {
+    "_postman_id": "8b8b4d42-44b0-4e95-9a1d-commute-flow",
+    "name": "SmartRide - Core Commute Workflow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Customer request broadcast, driver acceptance, admin oversight and distance pricing."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001/api"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "customerToken",
+      "value": ""
+    },
+    {
+      "key": "driverToken",
+      "value": ""
+    },
+    {
+      "key": "planId",
+      "value": ""
+    },
+    {
+      "key": "subscriptionId",
+      "value": ""
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "customerEmail",
+      "value": ""
+    },
+    {
+      "key": "customerPassword",
+      "value": ""
+    },
+    {
+      "key": "driverEmail",
+      "value": ""
+    },
+    {
+      "key": "driverPassword",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{adminEmail}}\",\"password\":\"{{adminPassword}}\"}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Login customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{customerEmail}}\",\"password\":\"{{customerPassword}}\"}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Login driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{driverEmail}}\",\"password\":\"{{driverPassword}}\"}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin setup",
+      "item": [
+        {
+          "name": "Create duration plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Monthly Commute\",\"slug\":\"monthly-commute\",\"durationMonths\":1,\"description\":\"Recurring weekday commute\",\"features\":[\"Scheduled pickup\",\"Scheduled drop\"]}"
+            },
+            "url": "{{baseUrl}}/subscription-plans"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.plan?._id) pm.collectionVariables.set('planId', body.plan._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create kilometre rate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"ratePerKm\":7.5,\"note\":\"Demo rate\"}"
+            },
+            "url": "{{baseUrl}}/pricing"
+          }
+        },
+        {
+          "name": "View customer-driver assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/subscriptions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer request",
+      "item": [
+        {
+          "name": "Save pickup and drop locations",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pickupLocation\":{\"address\":\"Home address, Bengaluru\",\"latitude\":12.97,\"longitude\":77.59},\"dropLocation\":{\"address\":\"Office address, Bengaluru\",\"latitude\":13.01,\"longitude\":77.55}}"
+            },
+            "url": "{{baseUrl}}/profile/me"
+          }
+        },
+        {
+          "name": "List duration plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/subscription-plans"
+          }
+        },
+        {
+          "name": "Create commute request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"planId\":\"{{planId}}\",\"directions\":[\"outbound\",\"return\"],\"serviceDays\":[1,2,3,4,5],\"pickupTime\":\"08:00\",\"dropTime\":\"08:45\",\"returnPickupTime\":\"17:00\",\"returnDropTime\":\"17:45\"}"
+            },
+            "url": "{{baseUrl}}/subscriptions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.subscription?._id) pm.collectionVariables.set('subscriptionId', body.subscription._id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Driver acceptance",
+      "item": [
+        {
+          "name": "List available requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers/requests"
+          }
+        },
+        {
+          "name": "Accept request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/drivers/requests/{{subscriptionId}}/accept"
+          }
+        },
+        {
+          "name": "My recurring trips",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/schedules/driver/my"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer views",
+      "item": [
+        {
+          "name": "My subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/subscriptions/my"
+          }
+        },
+        {
+          "name": "My schedule",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/schedules/my"
+          }
+        },
+        {
+          "name": "My trips",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/trips/my"
+          }
+        }
+      ]
+    }
+  ]
+}
